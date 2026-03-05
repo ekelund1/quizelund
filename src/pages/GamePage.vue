@@ -13,7 +13,7 @@
     </header>
 
     <!-- Board -->
-    <div class="board">
+    <div class="board" :style="{ '--cols': BOARD.length }">
       <!-- Category row -->
       <div class="board-row">
         <div v-for="(cat, ci) in BOARD" :key="ci" class="cell category-cell">
@@ -59,16 +59,6 @@
             <!-- Image media -->
             <QuestionImage v-else-if="imgMedia" :src="imgMedia.src" :alt="imgMedia.alt" />
 
-            <!-- Street View -->
-            <StreetViewPlayer
-              v-else-if="svMedia"
-              :panoid="svMedia.panoid"
-              :heading="svMedia.heading"
-              :pitch="svMedia.pitch"
-              :fov="svMedia.fov"
-              :spinSpeed="svMedia.spinSpeed"
-              :apiKey="svMedia.apiKey"
-            />
             <p class="modal-question">
               <span
                 v-for="(char, ci) in activeQuestion.text"
@@ -128,7 +118,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import QuestionImage from '../components/QuestionImage.vue'
-import StreetViewPlayer from '../components/StreetViewPlayer.vue'
 import YoutubeAudioPlayer from '../components/YoutubeAudioPlayer.vue'
 
 // ── Teams from router state ─────────────────────────────────
@@ -141,32 +130,22 @@ const teamColors = ['#FF6B1A', '#1A6BFF', '#FF1A6B', '#1AFFB2', '#FFD700', '#B21
 // ── Hardcoded board data ────────────────────────────────────
 const POINTS = [100, 200, 300, 400, 500]
 
-interface YTMedia {
+export interface YTMedia {
   type: 'youtube'
   videoId: string
   startSeconds: number
   duration: number
 }
 
-interface ImageMedia {
+export interface ImageMedia {
   type: 'image'
   src: string // local: '/assets/myimage.jpg'  or  external: 'https://...'
   alt?: string
 }
 
-interface StreetViewMedia {
-  type: 'streetview'
-  panoid: string // paste the panoid=XXXXX value from your Maps URL
-  heading?: number // initial heading/yaw (degrees, 0=North, 90=East)
-  pitch?: number // tilt in degrees (0 = horizon)
-  fov?: number // field of view (10–100, lower = zoomed in)
-  spinSpeed?: number // degrees per second (default 10)
-  apiKey: string
-}
+export type QuestionMedia = YTMedia | ImageMedia
 
-type QuestionMedia = YTMedia | ImageMedia | StreetViewMedia
-
-interface BoardCategory {
+export interface BoardCategory {
   category: string
   questions: string[]
   answers: string[]
@@ -175,115 +154,77 @@ interface BoardCategory {
 
 const BOARD: BoardCategory[] = [
   {
-    category: 'Historia',
-    questions: [
-      'Vilket år grundades Sverige?',
-      'Vem var Sveriges första kung?',
-      'Vilket år var det stora nordiska kriget?',
-      'Vilket år avskaffades slaveriet i USA?',
-      'Vad hette det romerska imperiet på latin?',
-    ],
-    answers: [
-      '1523 (Gustav Vasa)',
-      'Erik Segersäll (ca 970 e.Kr.)',
-      '1700–1721',
-      '1865 (13:e tillägget)',
-      'Imperium Romanum',
-    ],
+    category: 'Vad menar Olivia',
+    questions: ['"Dottadännerna"', '"Kaa-kaa"', '"Batuuu"', '"Gockegicka"', '"Bio-bio"'],
+    answers: ['Borsta tänderna', 'Katt', 'Bara Bada bastu', 'Smultrondricka', 'Vindruvor'],
   },
   {
-    category: 'Geografi',
+    // ── 2. Närmast vinner ───────────────────────────────────────
+    // Guess the number — closest wins the points!
+    category: 'Närmast vinner',
     questions: [
-      'Vad är Europas längsta flod?',
-      'Vilken är världens minsta stat?',
-      'Vad heter Australiens huvudstad?',
-      'Vilken öken är världens störst?',
-      'Hur många länder finns det i Afrika?',
+      'Hur många nollor har en Kvadriljon?',
+      'Hur många invånare hade Sydamerika när 2025 inleddes?',
+      'Hur många platser har Stortinget i Norge?',
+      'Hur många nummer av tidningen Bame kom ut under de första 50 åren?',
+      'Hur många bokstäver har det svenska handalfabetet (teckenspråket)?',
     ],
     answers: [
-      'Volga (3 530 km)',
-      'Vatikanstaten',
-      'Canberra',
-      'Sahara (ca 9,2 miljoner km²)',
-      '54 länder',
-    ],
-    media: [
-      {
-        type: 'streetview',
-        panoid: 'hqAP8zfRRTTzMcjkw0Y_4g',
-        heading: 85.3,
-        pitch: -6.6,
-        fov: 75,
-        spinSpeed: 10, // degrees per second — lower = slower
-        apiKey: 'YOUR_GOOGLE_MAPS_API_KEY',
-      },
-      null,
-      null,
-      null,
-      null,
-    ],
-  },
-  {
-    category: 'Vetenskap',
-    questions: [
-      'Vad är vattnets kemiska formel?',
-      'Hur många planeter finns det i solsystemet?',
-      'Vad mäter en seismograf?',
-      'Vad kallas processen när växter omvandlar ljus till energi?',
-      'Vad är DNA en förkortning av?',
-    ],
-    answers: [
-      'H₂O',
-      '8 planeter',
-      'Jordbävningar (seismiska vågor)',
-      'Fotosyntesen',
-      'Deoxyribonukleinsyra',
-    ],
-  },
-  {
-    category: 'Sport',
-    questions: [
-      'Hur många spelare finns det i ett fotbollslag?',
-      'Hur ofta hålls OS?',
-      'Vilket land har vunnit flest fotbolls-VM-titlar?',
-      'Hur lång är ett maraton i kilometer?',
-      'Vilken sport spelas på Wimbledon?',
-    ],
-    answers: [
-      '11 spelare per lag',
-      'Vart 4:e år',
-      'Brasilien (5 titlar)',
-      '42,195 km',
-      'Tennis (gräs)',
-    ],
-  },
-  {
-    category: 'Popkultur',
-    questions: [
-      "I vilken stad utspelar sig Game of Thrones' Kungshavn?",
-      // 🎵 This question plays a YouTube clip — teams listen and guess the song/artist
-      'Vilket band spelar denna låt?',
-      'Vilket år kom första iPhone?',
-      'Vad heter hatten som Indiana Jones bär?',
-      'Hur många stenar finns det i Infinity Gauntlet?',
-    ],
-    answers: [
-      "Dubrovnik, Kroatien (Kungshavn = King's Landing)",
-      'Toto — Africa (1982)',
-      '2007',
-      'En fedorahatt (Akubra)',
-      '6 Infinity-stenar',
+      '24 nollor  (10²⁴)',
+      'Ca 437 miljoner',
+      '169 platser',
+      '760 nummer',
+      '29 bokstäver, duh',
     ],
     media: [
       null,
-      { type: 'youtube', videoId: 'mKyuJoBSEug', startSeconds: 10, duration: 20 },
-      { type: 'image', src: '/assets/smile.png', alt: 'Description' },
-      { type: 'image', src: '/assets/smile.png', alt: 'Description' },
       {
         type: 'image',
-        src: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png',
-        alt: 'Description',
+        src: 'https://upload.wikimedia.org/wikipedia/commons/0/08/SACN_member_states.jpg',
+        alt: 'Sydamerika (ortografisk projektion)',
       },
+      {
+        type: 'image',
+        src: 'https://media3.colourbox.com/xOp_jmYohBkvFrlFldjOeMH508TFrBlN04zNJCsbUz8/resize:fit:1200:1200:1/q:70/aHR0cHM6Ly9tZWRpYS5jb2xvdXJib3guY29tL2tCaU9HNzU3bVdyNHZNMXBJY0hzY3NqWF9fNWxpS2ZkeC1mRjVCbGIyM3cvcmVzaXplOmZpdDoxNjAwOjE2MDA6MS9wbGFpbi9teXMzL2NvbG91cmJveC5wbG92cGVubmluZy5wcmV2aWV3LzE2MDBweF9DT0xPVVJCT1g5OTE2NTE3LmpwZw==',
+        alt: 'Stortinget, Oslo',
+      },
+      {
+        type: 'image',
+        src: 'https://www.nfbio.se/sites/nfbio.se/files/media-images/2023-02/10133_kalender_still_compositing_swe_.jpg',
+        alt: 'Bamse',
+      },
+
+      {
+        type: 'image',
+        src: 'https://i.pinimg.com/originals/fd/d9/67/fdd967a7324c19b77a08bace1b11d2b0.png',
+        alt: 'Teckenspråkalfabetet',
+      },
+    ],
+  },
+  {
+    // ── 3. Intron ───────────────────────────────────────────────
+    // Listen to the intro — which Swedish kids\' show is it?
+    category: 'Intron',
+    questions: [
+      'Vilket barnprogram är det här?',
+      'Vilket barnprogram är det här?',
+      'Vilket barnprogram är det här?',
+      'Vilket barnprogram är det här?',
+      'Vilket barnprogram är det här?',
+    ],
+    answers: [
+      'Sailor Moon',
+      'Disneydags',
+      'Räddningspatrullen',
+      'Mysteriet på Greveholm',
+      'Doktor Kosmos',
+    ],
+    media: [
+      { type: 'youtube', videoId: 'j2tQKejS9Fo', startSeconds: 0, duration: 20 },
+      { type: 'youtube', videoId: 'Cox-rpNMra0', startSeconds: 0, duration: 20 },
+      { type: 'youtube', videoId: 'RlddWaCiIqE', startSeconds: 0, duration: 20 },
+      { type: 'youtube', videoId: 'egFqytPHOa8', startSeconds: 0, duration: 20 },
+      { type: 'youtube', videoId: '0usqWWfp4D0', startSeconds: 0, duration: 20 },
     ],
   },
 ]
@@ -311,11 +252,6 @@ const ytMedia = computed(() =>
 )
 const imgMedia = computed(() =>
   activeQuestion.value?.media?.type === 'image' ? (activeQuestion.value.media as ImageMedia) : null,
-)
-const svMedia = computed(() =>
-  activeQuestion.value?.media?.type === 'streetview'
-    ? (activeQuestion.value.media as StreetViewMedia)
-    : null,
 )
 
 function openQuestion(ci: number, ri: number) {
@@ -445,7 +381,7 @@ function markPicked() {
 
 .board-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(var(--cols, 5), 1fr);
   gap: 0.6rem;
 }
 

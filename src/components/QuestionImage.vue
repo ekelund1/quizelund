@@ -67,13 +67,32 @@ const hasError = ref(false)
   height: 100%;
   max-height: 340px;
   object-fit: cover;
-  /* slight zoom that settles once loaded — ties the scale to the wrapper */
-  transform: scale(1.04);
-  transition: transform 0.8s cubic-bezier(0.34, 1.2, 0.64, 1);
+  transform-origin: center center;
+  animation: kenBurns 16s ease-in-out infinite alternate;
 }
 
-.img-wrapper.loaded .question-img {
-  transform: scale(1);
+/* Ken Burns: alternates between different zoom+pan targets each cycle */
+@keyframes kenBurns {
+  0% {
+    transform: scale(1.12) translate(-2%, -1%);
+  }
+  25% {
+    transform: scale(1.18) translate(1%, -2%);
+  }
+  50% {
+    transform: scale(1.1) translate(2%, 1%);
+  }
+  75% {
+    transform: scale(1.2) translate(-1%, 2%);
+  }
+  100% {
+    transform: scale(1.12) translate(-2%, -1%);
+  }
+}
+
+/* Pause Ken Burns until image is loaded */
+.img-wrapper:not(.loaded) .question-img {
+  animation-play-state: paused;
 }
 
 /* ── Vignette ────────────────────────────────────────────── */
