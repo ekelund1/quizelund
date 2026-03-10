@@ -80,6 +80,22 @@
             <div class="modal-category">{{ activeQuestion.category }} — Svar</div>
             <div class="modal-points">{{ activeQuestion.points }}</div>
 
+            <!-- YouTube audio on answer side -->
+            <YoutubeAudioPlayer
+              v-if="isFlipped && ytAnswerMedia"
+              :videoId="ytAnswerMedia.videoId"
+              :startSeconds="ytAnswerMedia.startSeconds"
+              :duration="ytAnswerMedia.duration"
+            />
+
+            <!-- Image on answer side -->
+            <QuestionImage
+              v-else-if="isFlipped && imgAnswerMedia"
+              :src="imgAnswerMedia.src"
+              :alt="imgAnswerMedia.alt"
+              :eager="true"
+            />
+
             <p class="modal-answer">{{ activeQuestion.answer }}</p>
 
             <div class="award-section">
@@ -149,13 +165,55 @@ export interface BoardCategory {
   category: string
   questions: string[]
   answers: string[]
-  media?: (QuestionMedia | null)[]
+  media?: (QuestionMedia | null)[] // question (front) media
+  answerMedia?: (QuestionMedia | null)[] // answer (back) media
 }
 
 const BOARD: BoardCategory[] = [
   {
+    category: 'Fogdevägen',
+    questions: [
+      'Hur kan man ta reda på om någon har skulder hos Kronofogdemyndigheten?',
+      'Vilket år blev Kronofogden en egen myndighet?',
+      'Vad innebär det om man gör en "förbehållsbeloppsberäkning"?',
+      'Vilket speciellt mandat har innehar Kronofogden, som inte ens polis eller tull har?',
+      'I snitt, hur många kronor Swishas till Kronofogden varje dag?',
+    ],
+    answers: [
+      'Ringer dem. Skulder hos KFM är offentliga handlingar',
+      '1 januari 2008. Den var tidigare en del av Skatteverket',
+      'Räknar ut hur mycket pengar du kommer ha kvar efter det att Kronofogden har gjort en löneutmätning.',
+      'Genomföra vräkningar och handräckningar',
+      'ca 1,5 miljoner kronor 💸💸💸💸',
+    ],
+  },
+  {
+    category: 'Lekelunds historia',
+    questions: [
+      'Vilket år hölls det första Lekelunds?',
+      'På "Lekelunds 2: The great treasure hunt", var det första gången vi hade lagtröjor. Vad hade vi för sorts lagtröjor?',
+      'På den första Lekelunds som hölls, var vi på totalt 5 olika platser. Nämn 3 av dem.',
+      '"På "Lekelunds 2: The great treasure hunt", hade vi en annan straffdricka än det normala. Vad hade vi?',
+      'Hur många lekar var det totalt på Lekelunds 3?',
+    ],
+    answers: [
+      'Sommaren 2019',
+      'Reflexvästar. Gula, Gröna och Rosa',
+      'Ronny & Lenas hus, Tallens badplats, Nytorpet, Södra Hoka parkeringen, Sommarstugan',
+      'Fernet-Branca',
+      '12\nSkapa lag\nSkapa laganda\nFörbjuda ordet\nRotfruksboule\nVälja och kasta\nUppdragen\nFrisbeegolf\nBlast-off\nSkap hinderbana\nKlara hinderbana\nPå förskolan\nQuizelund',
+    ],
+    answerMedia: [
+      null,
+      null,
+      null,
+      { type: 'image', src: `${import.meta.env.BASE_URL}assets/Fernet.jpg`, alt: 'Fernet-Branca' },
+      null,
+    ],
+  },
+  {
     category: 'Vad menar Olivia',
-    questions: ['"Dottadännerna"', '"Kaa-kaa"', '"Batuuu"', '"Gockegicka"', '"Bio-bio"'],
+    questions: ['"Dottadännerna"', '"Kaa-kaa"', '"Batuuu"', '"Gååcke-gicka"', '"Bio-bio"'],
     answers: ['Borsta tänderna', 'Katt', 'Bara Bada bastu', 'Smultrondricka', 'Vindruvor'],
   },
   {
@@ -193,7 +251,6 @@ const BOARD: BoardCategory[] = [
         src: 'https://www.nfbio.se/sites/nfbio.se/files/media-images/2023-02/10133_kalender_still_compositing_swe_.jpg',
         alt: 'Bamse',
       },
-
       {
         type: 'image',
         src: 'https://i.pinimg.com/originals/fd/d9/67/fdd967a7324c19b77a08bace1b11d2b0.png',
@@ -238,6 +295,7 @@ interface ActiveQ {
   text: string
   answer: string
   media?: QuestionMedia | null
+  answerMedia?: QuestionMedia | null
   colIndex: number
   rowIndex: number
 }
@@ -246,12 +304,24 @@ const activeQuestion = ref<ActiveQ | null>(null)
 const isFlipped = ref(false)
 const selectedTeams = reactive<Set<number>>(new Set())
 
-// Typed narrowing helpers for the template
+// Typed narrowing helpers — question (front)
 const ytMedia = computed(() =>
   activeQuestion.value?.media?.type === 'youtube' ? (activeQuestion.value.media as YTMedia) : null,
 )
 const imgMedia = computed(() =>
   activeQuestion.value?.media?.type === 'image' ? (activeQuestion.value.media as ImageMedia) : null,
+)
+
+// Typed narrowing helpers — answer (back)
+const ytAnswerMedia = computed(() =>
+  activeQuestion.value?.answerMedia?.type === 'youtube'
+    ? (activeQuestion.value.answerMedia as YTMedia)
+    : null,
+)
+const imgAnswerMedia = computed(() =>
+  activeQuestion.value?.answerMedia?.type === 'image'
+    ? (activeQuestion.value.answerMedia as ImageMedia)
+    : null,
 )
 
 function openQuestion(ci: number, ri: number) {
@@ -266,6 +336,7 @@ function openQuestion(ci: number, ri: number) {
     text: col.questions[ri]!,
     answer: col.answers![ri]!,
     media: col.media?.[ri] ?? null,
+    answerMedia: col.answerMedia?.[ri] ?? null,
     colIndex: ci,
     rowIndex: ri,
   }
@@ -527,6 +598,9 @@ function markPicked() {
   width: 100%;
   max-width: 760px;
   perspective: 1400px;
+  /* Grid stacking: both faces occupy the same cell so the scene
+     always sizes to whichever face is taller */
+  display: grid;
 }
 
 .flip-scene.flipped .flip-front {
@@ -556,7 +630,7 @@ function markPicked() {
     0 0 80px rgba(26, 107, 255, 0.15),
     0 30px 80px rgba(0, 0, 0, 0.7);
   transform: rotateY(0deg);
-  position: relative;
+  grid-area: 1 / 1;
 }
 
 .flip-back {
@@ -566,15 +640,9 @@ function markPicked() {
     0 0 80px rgba(26, 255, 107, 0.1),
     0 30px 80px rgba(0, 0, 0, 0.7);
   transform: rotateY(-180deg);
-  /* Back face sits "behind" front in the DOM — use absolute so they overlap */
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-/* Make parent relative so back can absolute-overlay */
-.flip-scene {
-  position: relative;
+  /* Stacks on top of front via shared grid area */
+  grid-area: 1 / 1;
+  align-self: start;
 }
 
 /* ── Shared modal typography ────────────────────────────── */
@@ -627,6 +695,7 @@ function markPicked() {
   line-height: 1.4;
   margin: 0;
   text-shadow: 0 0 30px rgba(78, 255, 176, 0.4);
+  white-space: pre-line;
 }
 
 /* ── "Visa svar" flip trigger button ────────────────────── */

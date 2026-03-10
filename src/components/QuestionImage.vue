@@ -28,12 +28,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-defineProps<{
+const props = defineProps<{
   src: string
   alt?: string
+  eager?: boolean // skip fade-in, show image immediately
 }>()
 
-const isLoaded = ref(false)
+const isLoaded = ref(props.eager ?? false)
 const hasError = ref(false)
 </script>
 
@@ -42,6 +43,7 @@ const hasError = ref(false)
 .img-wrapper {
   position: relative;
   width: 100%;
+  height: 260px;
   max-height: 340px;
   border-radius: 16px;
   overflow: hidden;
