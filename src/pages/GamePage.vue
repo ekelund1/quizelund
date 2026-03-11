@@ -69,6 +69,14 @@
               >
             </p>
 
+            <!-- Background music + countdown corner (skipped for Intron which has its own YT player) -->
+            <template v-if="!ytMedia">
+              <BackgroundMusicPlayer v-if="!isFlipped" videoId="eQMri29IJEI" />
+              <div class="countdown-corner">
+                <QuestionCountdown :seconds="25" :delay="1200" :key="activeQuestion.text" />
+              </div>
+            </template>
+
             <button class="flip-btn" @click="isFlipped = true">
               <span>Visa svar</span>
               <span class="flip-icon">↩</span>
@@ -133,6 +141,8 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import BackgroundMusicPlayer from '../components/BackgroundMusicPlayer.vue'
+import QuestionCountdown from '../components/QuestionCountdown.vue'
 import QuestionImage from '../components/QuestionImage.vue'
 import YoutubeAudioPlayer from '../components/YoutubeAudioPlayer.vue'
 
