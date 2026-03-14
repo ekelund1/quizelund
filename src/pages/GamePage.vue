@@ -314,11 +314,11 @@ const BOARD: BoardCategory[] = [
     // Listen to the intro — which Swedish kids\' show is it?
     category: 'Intron',
     questions: [
-      'Vilket barnprogram är det här?',
-      'Vilket barnprogram är det här?',
-      'Vilket barnprogram är det här?',
-      'Vilket barnprogram är det här?',
-      'Vilket barnprogram är det här?',
+      'Vilket tv-program är det här?',
+      'Vilket tv-program är det här?',
+      'Vilket tv-program är det här?',
+      'Vilket tv-program är det här?',
+      'Vilket tv-program är det här?',
     ],
     answers: [
       'Sailor Moon',
