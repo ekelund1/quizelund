@@ -59,6 +59,19 @@
             <!-- Image media -->
             <QuestionImage v-else-if="imgMedia" :src="imgMedia.src" :alt="imgMedia.alt" />
 
+            <!-- Link media (question side) -->
+            <a
+              v-else-if="linkMedia"
+              :href="linkMedia.src"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="play-link-btn"
+              @click="musicPaused = true"
+            >
+              <span class="play-link-icon">🎬</span>
+              Spela video
+            </a>
+
             <p class="modal-question">
               <span
                 v-for="(char, ci) in activeQuestion.text"
@@ -71,7 +84,11 @@
 
             <!-- Background music + countdown corner (skipped for Intron which has its own YT player) -->
             <template v-if="!ytMedia">
-              <BackgroundMusicPlayer v-if="!isFlipped" videoId="eQMri29IJEI" />
+              <BackgroundMusicPlayer
+                v-if="!isFlipped"
+                videoId="eQMri29IJEI"
+                :paused="musicPaused"
+              />
               <div class="countdown-corner">
                 <QuestionCountdown :seconds="25" :delay="1200" :key="activeQuestion.text" />
               </div>
@@ -103,6 +120,18 @@
               :alt="imgAnswerMedia.alt"
               :eager="true"
             />
+
+            <!-- Link media on answer side -->
+            <a
+              v-if="isFlipped && linkAnswerMedia"
+              :href="linkAnswerMedia.src"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="play-link-btn"
+            >
+              <span class="play-link-icon">🎬</span>
+              Spela video
+            </a>
 
             <p class="modal-answer">{{ activeQuestion.answer }}</p>
 
@@ -169,7 +198,12 @@ export interface ImageMedia {
   alt?: string
 }
 
-export type QuestionMedia = YTMedia | ImageMedia
+export interface LinkMedia {
+  type: 'link'
+  src: string // URL to open in a new tab
+}
+
+export type QuestionMedia = YTMedia | ImageMedia | LinkMedia
 
 export interface BoardCategory {
   category: string
@@ -186,7 +220,7 @@ const BOARD: BoardCategory[] = [
       'Hur kan man ta reda på om någon har skulder hos Kronofogdemyndigheten?',
       'Vilket år blev Kronofogden en egen myndighet?',
       'Vad innebär det om man gör en "förbehållsbeloppsberäkning"?',
-      'Vilket speciellt mandat har innehar Kronofogden, som inte ens polis eller tull har?',
+      'Vilket speciellt mandat innehar Kronofogden, som inte ens polis eller tull har?',
       'I snitt, hur många kronor Swishas till Kronofogden varje dag?',
     ],
     answers: [
@@ -204,14 +238,21 @@ const BOARD: BoardCategory[] = [
       'På "Lekelunds 2: The great treasure hunt", var det första gången vi hade lagtröjor. Vad hade vi för sorts lagtröjor?',
       'På den första Lekelunds som hölls, var vi på totalt 5 olika platser. Nämn 3 av dem.',
       '"På "Lekelunds 2: The great treasure hunt", hade vi en annan straffdricka än det normala. Vad hade vi?',
-      'Hur många lekar var det totalt på Lekelunds 3?',
+      'Vilket år är detta från?',
     ],
     answers: [
       'Sommaren 2019',
       'Reflexvästar. Gula, Gröna och Rosa',
       'Ronny & Lenas hus, Tallens badplats, Nytorpet, Södra Hoka parkeringen, Sommarstugan',
       'Fernet-Branca',
-      '12\nSkapa lag\nSkapa laganda\nFörbjuda ordet\nRotfruksboule\nVälja och kasta\nUppdragen\nFrisbeegolf\nBlast-off\nSkap hinderbana\nKlara hinderbana\nPå förskolan\nQuizelund',
+      'Juli 2020',
+    ],
+    media: [
+      null,
+      null,
+      null,
+      null,
+      { type: 'link', src: 'https://www.facebook.com/reel/4199077670134766' },
     ],
     answerMedia: [
       null,
@@ -223,8 +264,8 @@ const BOARD: BoardCategory[] = [
   },
   {
     category: 'Vad menar Olivia',
-    questions: ['"Dottadännerna"', '"Kaa-kaa"', '"Batuuu"', '"Gååcke-gicka"', '"Bio-bio"'],
-    answers: ['Borsta tänderna', 'Katt', 'Bara Bada bastu', 'Smultrondricka', 'Vindruvor'],
+    questions: ['"Dottadännerna"', '"Kaa-kaa"', '"Tot"', '"Gååcke-gicka"', '"Bio-bio"'],
+    answers: ['Borsta tänderna', 'Katt', 'Ost', 'Smultrondricka', 'Vindruvor'],
   },
   {
     // ── 2. Närmast vinner ───────────────────────────────────────
@@ -313,6 +354,7 @@ interface ActiveQ {
 const activeQuestion = ref<ActiveQ | null>(null)
 const isFlipped = ref(false)
 const selectedTeams = reactive<Set<number>>(new Set())
+const musicPaused = ref(false)
 
 // Typed narrowing helpers — question (front)
 const ytMedia = computed(() =>
@@ -320,6 +362,9 @@ const ytMedia = computed(() =>
 )
 const imgMedia = computed(() =>
   activeQuestion.value?.media?.type === 'image' ? (activeQuestion.value.media as ImageMedia) : null,
+)
+const linkMedia = computed(() =>
+  activeQuestion.value?.media?.type === 'link' ? (activeQuestion.value.media as LinkMedia) : null,
 )
 
 // Typed narrowing helpers — answer (back)
@@ -331,6 +376,11 @@ const ytAnswerMedia = computed(() =>
 const imgAnswerMedia = computed(() =>
   activeQuestion.value?.answerMedia?.type === 'image'
     ? (activeQuestion.value.answerMedia as ImageMedia)
+    : null,
+)
+const linkAnswerMedia = computed(() =>
+  activeQuestion.value?.answerMedia?.type === 'link'
+    ? (activeQuestion.value.answerMedia as LinkMedia)
     : null,
 )
 
@@ -376,6 +426,7 @@ function markPicked() {
   activeQuestion.value = null
   isFlipped.value = false
   selectedTeams.clear()
+  musicPaused.value = false
 }
 </script>
 
@@ -840,6 +891,67 @@ function markPicked() {
 .close-btn:hover {
   border-color: #ff4444;
   color: #ff6666;
+}
+
+/* ── Video link button ──────────────────────────────────── */
+.play-link-btn {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 2.2rem;
+  background: linear-gradient(135deg, #6b21ff, #3b82f6);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow:
+    0 0 30px rgba(107, 33, 255, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.4s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.play-link-btn:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow:
+    0 0 50px rgba(107, 33, 255, 0.65),
+    0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+.play-link-btn:hover .play-link-icon {
+  animation: iconPulse 0.5s ease infinite alternate;
+}
+
+.play-link-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes iconPulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.25);
+  }
 }
 
 /* ── Modal entrance / exit transition ───────────────────── */

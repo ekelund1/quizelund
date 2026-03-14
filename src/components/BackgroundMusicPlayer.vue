@@ -6,11 +6,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps<{
   videoId: string
   startSeconds?: number
+  paused?: boolean
 }>()
 
 const playerId = `bg-music-${Math.random().toString(36).slice(2, 8)}`
@@ -34,10 +35,31 @@ function initPlayer() {
     },
     events: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onReady: (e: any) => e.target.playVideo(),
+      onReady: (e: any) => {
+        if (props.paused) {
+          e.target.pauseVideo()
+        } else {
+          e.target.playVideo()
+        }
+      },
     },
   })
 }
+
+watch(
+  () => props.paused,
+  (shouldPause) => {
+    try {
+      if (shouldPause) {
+        player?.pauseVideo()
+      } else {
+        player?.playVideo()
+      }
+    } catch {
+      /* ignore */
+    }
+  },
+)
 
 onMounted(() => {
   if (typeof window.YT !== 'undefined' && window.YT.Player) {
